@@ -223,7 +223,6 @@
         </button>
         <ul class="combo-list" id="event-list" role="listbox" aria-labelledby="event-label"></ul>
       </div>
-      <div class="err">Pick whichever is closest.</div>
     </div>
 
     <div class="field" id="f-note">
@@ -431,8 +430,11 @@ form.addEventListener('submit', async (e) => {
   const event = eventValue;
   const note  = el('note').value.trim();
 
+  /* The event is not required. Somebody with nothing planned should not have
+     to declare that before they can hand in their feedback, and the question
+     is not labelled optional either: asked plainly it gets answered more
+     often than asked with permission to skip. */
   let bad = null;
-  if (!event)            { markBad('f-event');  bad = bad || 'f-event'; }
   if (!rating)           { markBad('f-rating'); bad = bad || 'f-rating'; }
   if (!validPhone(phone)){ markBad('f-phone');  bad = bad || 'f-phone'; }
   if (name.length < 2)   { markBad('f-name');   bad = bad || 'f-name'; }
@@ -441,7 +443,7 @@ form.addEventListener('submit', async (e) => {
   /* A bot filled the hidden field. Show the thank you and write nothing. */
   if (el('company').value) { finish(rating); return; }
 
-  const lead = { name, phone, rating, event_type: event, note: note || null, source: SOURCE };
+  const lead = { name, phone, rating, event_type: event || null, note: note || null, source: SOURCE };
 
   btn.disabled = true;
   btn.textContent = 'Sending…';
