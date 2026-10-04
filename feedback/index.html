@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Feedback — Vuyala's Kittchen</title>
+<meta name="description" content="Tell us how the food was, and let us know if you have an event coming up." />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#AE3C2B" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cream:      #ECE3CF;
+    --cream-lite: #F3ECDB;
+    --cream-deep: #E3D8BF;
+    --terracotta: #AE3C2B;
+    --charcoal:   #38291F;
+    --muted:      #8C7A66;
+    --frame:      #B0432F;
+    --gold:       #C9961F;
+    --err:        #9B2C1C;
+    --ok:         #3F6B3A;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--serif); color: var(--charcoal); background: var(--cream);
+    font-size: 18px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+    min-height: 100svh; display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px calc(32px + env(safe-area-inset-bottom));
+  }
+
+  .card {
+    width: 100%; max-width: 480px; background: var(--cream-lite);
+    border: 1px solid rgba(176,67,47,.22); border-radius: 14px;
+    box-shadow: 0 14px 40px rgba(56,41,31,.10);
+    padding: 28px 22px 26px;
+  }
+
+  .logo { height: 46px; width: auto; display: block; margin: 0 auto 16px; }
+
+  h1 { font-size: 30px; font-weight: 700; line-height: 1.12; text-align: center; }
+  .sub { text-align: center; color: var(--muted); font-size: 17px; margin-top: 6px; }
+
+  .orn { display:flex; align-items:center; justify-content:center; gap:12px; color: var(--terracotta); margin: 16px 0 22px; }
+  .orn .ln { width: 56px; height: 1px; background: linear-gradient(90deg, transparent, var(--frame)); }
+  .orn .ln.r { background: linear-gradient(90deg, var(--frame), transparent); }
+  .orn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta); }
+
+  .field { margin-bottom: 18px; }
+  label { display: block; font-weight: 600; font-size: 17px; margin-bottom: 7px; }
+  label .opt { font-weight: 400; font-style: italic; color: var(--muted); font-size: 15px; }
+
+  input, textarea, .combo {
+    width: 100%; font-family: var(--serif); font-size: 18px; color: var(--charcoal);
+    background: #fff; border: 1.5px solid var(--cream-deep); border-radius: 8px;
+    padding: 12px 14px; transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  textarea { resize: vertical; min-height: 76px; }
+  input:focus, textarea:focus, .combo:focus-visible {
+    outline: none; border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(174,60,43,.14);
+  }
+
+  /* ---------- dropdown ----------
+     A native <select> renders its popup with the operating system's own
+     styling: a system font, a blue highlight, square corners, nothing we can
+     reach from CSS. On a page that is otherwise all cream and terracotta it
+     looks like a different website. This is the same control built from a
+     button and a list, so the open state matches the closed one. */
+  .combo-wrap { position: relative; }
+  .combo {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .combo .val { flex: 1; min-width: 0; }
+  .combo.placeholder .val { color: var(--muted); }
+  .combo .caret { flex: none; width: 13px; height: 9px; transition: transform .2s var(--ease); }
+  .combo .caret path { fill: none; stroke: var(--terracotta); stroke-width: 1.7; stroke-linecap: round; }
+  .combo[aria-expanded="true"] { border-color: var(--terracotta); border-radius: 8px 8px 0 0; }
+  .combo[aria-expanded="true"] .caret { transform: rotate(180deg); }
+
+  .combo-list {
+    display: none; position: absolute; z-index: 20; left: 0; right: 0; top: 100%;
+    background: #fff; border: 1.5px solid var(--terracotta); border-top: 0;
+    border-radius: 0 0 8px 8px; box-shadow: 0 16px 34px rgba(56,41,31,.18);
+    max-height: 310px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 4px 0;
+  }
+  .combo-list.open { display: block; }
+  .combo-list li {
+    list-style: none; padding: 11px 42px 11px 16px; font-size: 17px; line-height: 1.35;
+    cursor: pointer; position: relative; transition: background .12s;
+  }
+  .combo-list li + li { border-top: 1px solid rgba(227,216,191,.7); }
+  .combo-list li.active { background: rgba(174,60,43,.09); }
+  .combo-list li[aria-selected="true"] { color: var(--terracotta); font-weight: 600; }
+  .combo-list li[aria-selected="true"]::after {
+    content: ''; position: absolute; right: 17px; top: 50%; width: 13px; height: 7px;
+    border-left: 2px solid var(--terracotta); border-bottom: 2px solid var(--terracotta);
+    transform: translateY(-70%) rotate(-45deg);
+  }
+  .field.bad .combo { border-color: var(--err); }
+  .phone-wrap { display: flex; align-items: stretch; }
+  .phone-wrap .cc {
+    display: flex; align-items: center; padding: 0 12px; font-size: 18px; color: var(--muted);
+    background: var(--cream-deep); border: 1.5px solid var(--cream-deep); border-right: 0;
+    border-radius: 8px 0 0 8px;
+  }
+  .phone-wrap input { border-radius: 0 8px 8px 0; }
+
+  /* ---------- stars ---------- */
+  .stars { display: flex; gap: 8px; justify-content: space-between; max-width: 290px; }
+  .stars button {
+    flex: 1; background: none; border: 0; padding: 4px 0; cursor: pointer; line-height: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stars svg { width: 100%; max-width: 46px; height: auto; margin: 0 auto; display: block;
+               transition: transform .18s var(--ease); }
+  .stars button:active svg { transform: scale(.88); }
+  .stars path { fill: #fff; stroke: var(--cream-deep); stroke-width: 1.4; transition: fill .15s, stroke .15s; }
+  .stars button.on path { fill: var(--gold); stroke: #A77B14; }
+  .rating-word { font-size: 16px; font-style: italic; color: var(--terracotta); margin-top: 7px; min-height: 24px; }
+
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+  .err { color: var(--err); font-size: 15px; margin-top: 6px; display: none; }
+  .field.bad input, .field.bad select { border-color: var(--err); }
+  .field.bad .err { display: block; }
+
+  .btn {
+    width: 100%; font-family: var(--serif); font-weight: 600; font-size: 18px;
+    letter-spacing: .07em; text-transform: uppercase;
+    padding: 15px 20px; border-radius: 6px; border: 1.5px solid var(--terracotta);
+    background: var(--terracotta); color: var(--cream-lite); cursor: pointer;
+    transition: background .2s, transform .2s var(--ease), opacity .2s;
+    margin-top: 6px;
+  }
+  .btn:hover:not(:disabled) { background: #952f20; }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: .6; cursor: default; }
+
+  .privacy { font-size: 15px; color: var(--muted); text-align: center; margin-top: 14px; line-height: 1.45; }
+
+  .formerr {
+    display: none; background: rgba(155,44,28,.08); border: 1px solid rgba(155,44,28,.3);
+    color: var(--err); border-radius: 8px; padding: 11px 13px; font-size: 16px; margin-bottom: 16px;
+  }
+  .formerr.show { display: block; }
+
+  /* ---------- thank you ---------- */
+  #done { display: none; text-align: center; padding: 10px 0 6px; }
+  #done.show { display: block; animation: rise .5s var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  .tick { width: 66px; height: 66px; margin: 0 auto 18px; display: block; }
+  .tick circle { fill: none; stroke: var(--ok); stroke-width: 3; }
+  .tick path { fill: none; stroke: var(--ok); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+               stroke-dasharray: 36; stroke-dashoffset: 36; animation: draw .5s var(--ease) .18s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  #done h2 { font-size: 28px; font-weight: 700; }
+  #done p { color: var(--muted); font-size: 18px; margin-top: 8px; }
+  .link { display: inline-block; margin-top: 20px; color: var(--terracotta); font-weight: 600;
+          border-bottom: 1px solid rgba(174,60,43,.4); padding-bottom: 2px; text-decoration: none; }
+
+  @media (max-width: 380px) {
+    body { font-size: 17px; }
+    .card { padding: 22px 16px 20px; }
+    h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<main class="card">
+  <form id="form" novalidate>
+    <!-- its own copy, not /logo.png, so the page also works opened straight
+         from disk and from any path it ever gets moved to -->
+    <img class="logo" src="logo.png" alt="Vuyala's Kittchen" />
+    <h1>How was the food?</h1>
+    <p class="sub">Thirty seconds, and it genuinely helps us.</p>
+    <div class="orn"><span class="ln"></span><span class="dot"></span><span class="ln r"></span></div>
+
+    <div class="formerr" id="formerr"></div>
+
+    <div class="field" id="f-name">
+      <label for="name">Your name</label>
+      <input id="name" name="name" type="text" autocomplete="name" maxlength="80"
+             placeholder="e.g. Ramesh" enterkeyhint="next" />
+      <div class="err">Please tell us your name.</div>
+    </div>
+
+    <div class="field" id="f-phone">
+      <label for="phone">Phone number</label>
+      <div class="phone-wrap">
+        <span class="cc">+91</span>
+        <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+               maxlength="14" placeholder="10 digit mobile" enterkeyhint="next" />
+      </div>
+      <div class="err">That does not look like a 10 digit mobile number.</div>
+    </div>
+
+    <div class="field" id="f-rating">
+      <label>How was the food?</label>
+      <div class="stars" id="stars" role="radiogroup" aria-label="Rating out of five"></div>
+      <div class="rating-word" id="ratingword"></div>
+      <div class="err">Please tap a star.</div>
+    </div>
+
+    <div class="field" id="f-event">
+      <label id="event-label">Any event coming up that we could cater?</label>
+      <div class="combo-wrap">
+        <button type="button" class="combo placeholder" id="event"
+                role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                aria-controls="event-list" aria-labelledby="event-label event">
+          <span class="val">Choose one</span>
+          <svg class="caret" viewBox="0 0 13 9" aria-hidden="true"><path d="M1 1l5.5 6L12 1"/></svg>
+        </button>
+        <ul class="combo-list" id="event-list" role="listbox" aria-labelledby="event-label"></ul>
+      </div>
+      <div class="err">Pick whichever is closest.</div>
+    </div>
+
+    <div class="field" id="f-note">
+      <label for="note">Anything you'd like to tell us? <span class="opt">optional</span></label>
+      <textarea id="note" name="note" maxlength="500" rows="2"
+                placeholder="A dish you loved, or something we could do better"></textarea>
+    </div>
+
+    <div class="hp" aria-hidden="true">
+      <label for="company">Company</label>
+      <input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <button class="btn" id="submit" type="submit">Send</button>
+    <p class="privacy">We will only use your number to talk to you about catering. We never sell it or pass it on.</p>
+  </form>
+
+  <section id="done" aria-live="polite">
+    <svg class="tick" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l8 8 15-16"/></svg>
+    <h2 id="done-title">Thank you</h2>
+    <p id="done-msg"></p>
+    <a class="link" href="/">Visit Vuyala's Kittchen</a>
+  </section>
+</main>
+
+<script>
+/* ------------------------------------------------------------------ config
+ *
+ * The publishable key is meant to live in client code. The ev_leads table has
+ * an insert-only RLS policy, so this key can add a lead and cannot read one
+ * back. Never put the service_role key in this file.
+ *
+ * SHEET_WEBHOOK is the n8n Production URL for the "VK Event Lead to Sheet"
+ * workflow. Leave it as the placeholder and the Google Sheet copy is simply
+ * skipped; Supabase still gets every lead.
+ */
+const SUPABASE_URL  = 'https://vwlekmlbzzntceyzyofc.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_WWIFRScRuPpt6npL8DLYzg_hNSZqBTh';
+const SHEET_WEBHOOK = 'https://community.invarianceai.io/webhook/event-lead';
+
+/* Which printed QR this came from. Change it for the next event and the two
+   batches stay separable in the table. */
+const SOURCE = 'event-oct-2026';
+
+/* ------------------------------------------------------------------- stars */
+const WORDS = ['', 'Sorry to hear that', 'Not our best', 'Alright', 'Good', 'Loved it, thank you!'];
+const starsEl = document.getElementById('stars');
+const wordEl  = document.getElementById('ratingword');
+let rating = 0;
+
+const STAR = 'M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4 6.2 20.5l1.1-6.5L2.6 9.4l6.5-.9z';
+
+for (let i = 1; i <= 5; i++) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.setAttribute('role', 'radio');
+  b.setAttribute('aria-checked', 'false');
+  b.setAttribute('aria-label', i + (i === 1 ? ' star' : ' stars'));
+  b.innerHTML = '<svg viewBox="0 0 24 24"><path d="' + STAR + '"/></svg>';
+  b.addEventListener('click', () => setRating(i));
+  starsEl.appendChild(b);
+}
+
+function setRating(n) {
+  rating = n;
+  [...starsEl.children].forEach((b, i) => {
+    b.classList.toggle('on', i < n);
+    b.setAttribute('aria-checked', String(i === n - 1));
+  });
+  wordEl.textContent = WORDS[n];
+  clearBad('f-rating');
+}
+
+/* -------------------------------------------------------------- validation */
+const el = (id) => document.getElementById(id);
+const markBad  = (id) => el(id).classList.add('bad');
+const clearBad = (id) => el(id).classList.remove('bad');
+
+/* Strips +91, leading 0, spaces and dashes, leaving the 10 digits we store. */
+function normalisePhone(raw) {
+  let d = String(raw).replace(/\D/g, '');
+  if (d.length === 12 && d.startsWith('91')) d = d.slice(2);
+  if (d.length === 11 && d.startsWith('0'))  d = d.slice(1);
+  return d;
+}
+const validPhone = (d) => /^[6-9]\d{9}$/.test(d);
+
+/* Typing is only cleaned of junk characters, never truncated. Cutting to ten
+   digits as they type turns a pasted "+91 98765 43210" into "9198765432",
+   which is a different, perfectly valid-looking number. The country code is
+   dropped once they leave the field, where there is no half-typed number to
+   misread. */
+el('phone').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^\d+]/g, '').slice(0, 14);
+  clearBad('f-phone');
+});
+el('phone').addEventListener('blur', (e) => {
+  const d = normalisePhone(e.target.value);
+  if (d.length === 10) e.target.value = d;
+});
+el('name').addEventListener('input', () => clearBad('f-name'));
+
+/* ---------------------------------------------------------------- dropdown */
+const EVENTS = [
+  'Wedding',
+  'Engagement or reception',
+  'Birthday party',
+  'House warming / Gruhapravesham',
+  'Corporate or office event',
+  'Festival or pooja at home',
+  'Get-together with friends or family',
+  'Nothing planned, but keep me in mind',
+  'Not looking right now',
+];
+
+const combo = el('event');
+const list  = el('event-list');
+const valEl = combo.querySelector('.val');
+let eventValue = '';
+let active = -1;
+
+EVENTS.forEach((name, i) => {
+  const li = document.createElement('li');
+  li.id = 'ev-' + i;
+  li.setAttribute('role', 'option');
+  li.setAttribute('aria-selected', 'false');
+  li.textContent = name;
+  li.addEventListener('mouseenter', () => setActive(i));
+  /* pointerdown, not click: the button's own blur would close the list before
+     a click ever lands on the item under the finger */
+  li.addEventListener('pointerdown', (e) => { e.preventDefault(); choose(i); });
+  list.appendChild(li);
+});
+
+const isOpen = () => list.classList.contains('open');
+
+function openList() {
+  list.classList.add('open');
+  combo.setAttribute('aria-expanded', 'true');
+  setActive(active >= 0 ? active : 0);
+  /* the field sits low in the form, so on a short phone the list opens below
+     the fold unless the page comes up to meet it */
+  requestAnimationFrame(() => list.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+}
+
+function closeList() {
+  list.classList.remove('open');
+  combo.setAttribute('aria-expanded', 'false');
+  combo.removeAttribute('aria-activedescendant');
+}
+
+function setActive(i) {
+  active = i;
+  [...list.children].forEach((li, n) => li.classList.toggle('active', n === i));
+  if (i >= 0) {
+    combo.setAttribute('aria-activedescendant', 'ev-' + i);
+    list.children[i].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function choose(i) {
+  eventValue = EVENTS[i];
+  valEl.textContent = eventValue;
+  combo.classList.remove('placeholder');
+  [...list.children].forEach((li, n) => li.setAttribute('aria-selected', String(n === i)));
+  setActive(i);
+  closeList();
+  clearBad('f-event');
+  combo.focus();
+}
+
+combo.addEventListener('click', () => (isOpen() ? closeList() : openList()));
+
+combo.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeList(); return; }
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (isOpen() && active >= 0) choose(active); else openList();
+    return;
+  }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (!isOpen()) { openList(); return; }
+    const step = e.key === 'ArrowDown' ? 1 : -1;
+    setActive((active + step + EVENTS.length) % EVENTS.length);
+  }
+});
+
+combo.addEventListener('blur', () => { if (isOpen()) closeList(); });
+document.addEventListener('pointerdown', (e) => {
+  if (isOpen() && !e.target.closest('.combo-wrap')) closeList();
+});
+
+/* ------------------------------------------------------------------ submit */
+const form    = el('form');
+const btn     = el('submit');
+const formErr = el('formerr');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  formErr.classList.remove('show');
+
+  const name  = el('name').value.trim();
+  const phone = normalisePhone(el('phone').value);
+  const event = eventValue;
+  const note  = el('note').value.trim();
+
+  let bad = null;
+  if (!event)            { markBad('f-event');  bad = bad || 'f-event'; }
+  if (!rating)           { markBad('f-rating'); bad = bad || 'f-rating'; }
+  if (!validPhone(phone)){ markBad('f-phone');  bad = bad || 'f-phone'; }
+  if (name.length < 2)   { markBad('f-name');   bad = bad || 'f-name'; }
+  if (bad) { el(bad).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+
+  /* A bot filled the hidden field. Show the thank you and write nothing. */
+  if (el('company').value) { finish(rating); return; }
+
+  const lead = { name, phone, rating, event_type: event, note: note || null, source: SOURCE };
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/ev_leads', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(lead),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 200));
+
+    /* The Sheet is a convenience copy, not the record. Fire it and move on:
+       if n8n is down mid-event the guest must never see a failure. */
+    if (SHEET_WEBHOOK.startsWith('http')) {
+      fetch(SHEET_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...lead, at: new Date().toISOString() }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    finish(rating);
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = 'Try again';
+    formErr.textContent = 'That did not go through. Check your signal and tap Try again.';
+    formErr.classList.add('show');
+    formErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+function finish(stars) {
+  form.style.display = 'none';
+  el('done-title').textContent = stars >= 4 ? 'Thank you!' : 'Thank you for telling us';
+  el('done-msg').textContent = stars >= 4
+    ? 'We are glad you enjoyed it. If that event comes up, we would love to cook for it.'
+    : 'We have passed this to the kitchen. Give us another chance and we will do better.';
+  el('done').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
